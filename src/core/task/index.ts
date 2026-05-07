@@ -1989,6 +1989,7 @@ export class Task {
 				this.stateManager.getGlobalStateKey("nativeToolCallEnabled"),
 			enableParallelToolCalling: this.isParallelToolCallingEnabled(),
 			terminalExecutionMode: this.terminalExecutionMode,
+			requestLocalTools: this.taskState.requestLocalTools,
 		}
 
 		// Notify user if any conditional rules were applied for this request
@@ -1998,6 +1999,7 @@ export class Task {
 		}
 
 		const { systemPrompt, tools } = await getSystemPrompt(promptContext)
+		this.taskState.requestLocalTools = []
 		this.useNativeToolCalls = !!tools?.length
 		await this.writePromptMetadataArtifacts({ systemPrompt, providerInfo })
 
@@ -2570,6 +2572,7 @@ export class Task {
 		let parsedUserContent: ClineContent[]
 		let environmentDetails: string
 		let clinerulesError: boolean
+		this.taskState.requestLocalTools = []
 
 		if (shouldCompact) {
 			// When compacting, skip full context loading (use summarize_task instead)
@@ -3356,7 +3359,11 @@ export class Task {
 				}
 			}
 
-			const { processedText, needsClinerulesFileCheck: needsCheck } = await parseSlashCommands(
+			const {
+				processedText,
+				needsClinerulesFileCheck: needsCheck,
+				requestLocalTools,
+			} = await parseSlashCommands(
 				parsedText,
 				localWorkflowToggles,
 				globalWorkflowToggles,
@@ -3369,6 +3376,12 @@ export class Task {
 
 			if (needsCheck) {
 				needsClinerulesFileCheck = true
+			}
+
+			if (requestLocalTools?.length) {
+				this.taskState.requestLocalTools = Array.from(
+					new Set([...this.taskState.requestLocalTools, ...requestLocalTools]),
+				)
 			}
 
 			return processedText

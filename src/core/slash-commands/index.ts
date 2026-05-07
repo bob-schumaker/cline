@@ -4,6 +4,7 @@ import { McpPromptResponse } from "@shared/mcp"
 import fs from "fs/promises"
 import { telemetryService } from "@/services/telemetry"
 import { Logger } from "@/shared/services/Logger"
+import { ClineDefaultTool } from "@/shared/tools"
 import { isNativeToolCallingConfig } from "@/utils/model-utils"
 import {
 	condenseToolResponse,
@@ -48,11 +49,11 @@ export async function parseSlashCommands(
 	enableNativeToolCalls?: boolean,
 	providerInfo?: ApiProviderInfo,
 	mcpPromptFetcher?: McpPromptFetcher,
-): Promise<{ processedText: string; needsClinerulesFileCheck: boolean }> {
+): Promise<{ processedText: string; needsClinerulesFileCheck: boolean; requestLocalTools?: ClineDefaultTool[] }> {
 	const SUPPORTED_DEFAULT_COMMANDS = ["newtask", "smol", "compact", "newrule", "reportbug", "deep-planning", "explain-changes"]
 
 	// Determine if the current provider/model/setting actually uses native tool calling
-	const willUseNativeTools = isNativeToolCallingConfig(providerInfo!, enableNativeToolCalls || false)
+	const willUseNativeTools = providerInfo ? isNativeToolCallingConfig(providerInfo, enableNativeToolCalls || false) : false
 
 	const commandReplacements: Record<string, string> = {
 		newtask: newTaskToolResponse(willUseNativeTools),
@@ -62,6 +63,11 @@ export async function parseSlashCommands(
 		reportbug: reportBugToolResponse(),
 		"deep-planning": deepPlanningToolResponse(focusChainSettings, providerInfo, willUseNativeTools),
 		"explain-changes": explainChangesToolResponse(),
+	}
+
+	const requestLocalToolsByCommand: Partial<Record<string, ClineDefaultTool[]>> = {
+		smol: [ClineDefaultTool.CONDENSE],
+		compact: [ClineDefaultTool.CONDENSE],
 	}
 
 	// Regex patterns to extract content from different XML tags
@@ -102,7 +108,7 @@ export async function parseSlashCommands(
 		// slashMatch[2] is the command name
 		const slashPositionInContent = slashMatch.index + slashMatch[1].length
 		const slashPositionInFullText = contentStartIndex + slashPositionInContent
-		const commandText = "/" + slashMatch[2]
+		const commandText = `/${slashMatch[2]}`
 		const commandEndPosition = slashPositionInFullText + commandText.length
 
 		return fullText.substring(0, slashPositionInFullText) + fullText.substring(commandEndPosition)
@@ -138,7 +144,11 @@ export async function parseSlashCommands(
 				// Track telemetry for builtin slash command usage
 				telemetryService.captureSlashCommandUsed(ulid, commandName, "builtin")
 
-				return { processedText: processedText, needsClinerulesFileCheck: commandName === "newrule" }
+				return {
+					processedText,
+					needsClinerulesFileCheck: commandName === "newrule",
+					requestLocalTools: requestLocalToolsByCommand[commandName],
+				}
 			}
 
 			// Check for MCP prompt commands (format: mcp:<server>:<prompt>)

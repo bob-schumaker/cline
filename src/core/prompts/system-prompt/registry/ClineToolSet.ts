@@ -3,6 +3,7 @@ import { CLINE_MCP_TOOL_IDENTIFIER, McpServer } from "@/shared/mcp"
 import { ModelFamily } from "@/shared/prompts"
 import { ClineDefaultTool } from "@/shared/tools"
 import { type ClineToolSpec, toolSpecFunctionDeclarations, toolSpecFunctionDefinition, toolSpecInputSchema } from "../spec"
+import { getRequestLocalToolSpec } from "../tools/request-local"
 import { PromptVariant, SystemPromptContext } from "../types"
 
 export class ClineToolSet {
@@ -178,12 +179,15 @@ export class ClineToolSet {
 
 		// Base set
 		const toolConfigs = ClineToolSet.getEnabledToolSpecs(variant, context)
+		const requestLocalToolConfigs = (context.requestLocalTools ?? [])
+			.map((tool) => getRequestLocalToolSpec(tool, variant.family))
+			.filter((tool): tool is ClineToolSpec => tool !== undefined)
 
 		// MCP tools
 		const mcpServers = context.mcpHub?.getServers()?.filter((s) => s.disabled !== true) || []
 		const mcpTools = mcpServers?.flatMap((server) => mcpToolToClineToolSpec(variant.family, server))
 
-		const enabledTools = [...toolConfigs, ...mcpTools].filter(
+		const enabledTools = [...toolConfigs, ...requestLocalToolConfigs, ...mcpTools].filter(
 			(tool) => typeof tool.description === "string" && tool.description.trim().length > 0,
 		)
 		const converter = ClineToolSet.getNativeConverter(context.providerInfo.providerId, context.providerInfo.model.id)
