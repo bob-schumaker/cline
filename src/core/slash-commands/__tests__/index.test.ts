@@ -1,8 +1,19 @@
 import type { McpPromptResponse } from "@shared/mcp"
+import { ClineDefaultTool } from "@shared/tools"
 import { expect } from "chai"
 import { formatMcpPromptResponse, McpPromptFetcher, parseSlashCommands } from "../index"
 
 describe("slash-commands", () => {
+	describe("parseSlashCommands builtin handling", () => {
+		it("should request the condense tool only for compact commands", async () => {
+			const result = await parseSlashCommands("<task>/compact</task>", {}, {}, "test-ulid")
+
+			expect(result.processedText).to.include('<explicit_instructions type="condense">')
+			expect(result.requestLocalTools).to.deep.equal([ClineDefaultTool.CONDENSE])
+			expect(result.needsClinerulesFileCheck).to.equal(false)
+		})
+	})
+
 	describe("formatMcpPromptResponse", () => {
 		it("should format text message", () => {
 			const response: McpPromptResponse = {

@@ -58,4 +58,21 @@ describe("OpenAI-compatible gpt-oss native tools smoke test", () => {
 
 		expect(toolNames).to.include(ClineDefaultTool.APPLY_PATCH)
 	})
+
+	it("does not expose condense as a default native tool", async () => {
+		const { tools } = await getSystemPrompt(makeContext("gpt-5-codex"))
+		const toolNames = toolNamesFrom(tools)
+
+		expect(toolNames).to.not.include(ClineDefaultTool.CONDENSE)
+	})
+
+	it("exposes condense when requested as a request-local native tool", async () => {
+		const { tools } = await getSystemPrompt({
+			...makeContext("gpt-5-codex"),
+			requestLocalTools: [ClineDefaultTool.CONDENSE],
+		})
+		const toolNames = toolNamesFrom(tools)
+
+		expect(toolNames).to.include(ClineDefaultTool.CONDENSE)
+	})
 })
