@@ -1,7 +1,8 @@
 import { fileExistsAtPath } from "@utils/fs"
 import { retryWithBackoff } from "@utils/retry"
+import type { Dirent } from "fs"
 import fs from "fs/promises"
-import { globby } from "globby"
+import ignore, { type Ignore } from "ignore"
 import * as path from "path"
 import simpleGit, { type SimpleGit } from "simple-git"
 import { telemetryService } from "@/services/telemetry"
@@ -139,22 +140,14 @@ export class GitOperations {
 	 * requirement of using submodules for nested repos.
 	 *
 	 * This method renames nested .git directories by adding/removing a suffix to temporarily disable/enable them.
-	 * The root .git directory is preserved. Uses VS Code's workspace API to find nested .git directories and
-	 * only processes actual directories (not files named .git).
+	 * The root .git directory is preserved. The filesystem traversal only processes actual directories
+	 * (not files named .git) and prunes paths matched by .checkpointignore.
 	 *
 	 * @param disable - If true, adds suffix to disable nested git repos. If false, removes suffix to re-enable them.
 	 * @throws Error if renaming any .git directory fails
 	 */
 	public async renameNestedGitRepos(disable: boolean) {
-		// Find all .git directories that are not at the root level
-		const gitPaths = await globby("**/.git" + (disable ? "" : GIT_DISABLED_SUFFIX), {
-			cwd: this.cwd,
-			onlyDirectories: true,
-			ignore: [".git", "**/node_modules/**"], // Ignore root level .git and node_modules (can contain recursive .git dirs that cause 10s+ scans)
-			dot: true,
-			markDirectories: false,
-			suppressErrors: true,
-		})
+		const gitPaths = await this.findNestedGitRepos(disable)
 
 		// For each nested .git directory, rename it based on operation
 		for (const gitPath of gitPaths) {
@@ -178,6 +171,80 @@ export class GitOperations {
 				)
 			}
 		}
+	}
+
+	/**
+	 * Loads repo-local checkpoint ignore patterns.
+	 *
+	 * .checkpointignore uses standard .gitignore-style syntax via the `ignore`
+	 * package. It is intentionally scoped to checkpoint nested-repository scans;
+	 * existing .gitignore and .clineignore files are not read or merged here.
+	 */
+	private async loadCheckpointIgnore(): Promise<Ignore> {
+		const matcher = ignore()
+		try {
+			const content = await fs.readFile(path.join(this.cwd, CHECKPOINT_IGNORE_FILENAME), "utf8")
+			matcher.add(content)
+		} catch {
+			// Missing or unreadable .checkpointignore should not block checkpoints.
+		}
+		return matcher
+	}
+
+	/**
+	 * Finds nested Git metadata directories while pruning paths ignored by
+	 * .checkpointignore before descending into them.
+	 *
+	 * This avoids the broad recursive globby scan that can traverse very large
+	 * generated directories before Git's own excludes are consulted.
+	 */
+	private async findNestedGitRepos(disable: boolean): Promise<string[]> {
+		const checkpointIgnore = await this.loadCheckpointIgnore()
+		const targetName = disable ? ".git" : `.git${GIT_DISABLED_SUFFIX}`
+		const gitPaths: string[] = []
+		const queue = [""]
+
+		while (queue.length > 0) {
+			const relativeDir = queue.shift()!
+			const absoluteDir = path.join(this.cwd, relativeDir)
+
+			let entries: Dirent[]
+			try {
+				entries = await fs.readdir(absoluteDir, { withFileTypes: true })
+			} catch {
+				continue
+			}
+
+			for (const entry of entries) {
+				if (!entry.isDirectory()) {
+					continue
+				}
+
+				const relativePath = toPosixPath(path.join(relativeDir, entry.name))
+
+				// Preserve existing behavior: never operate on the workspace root .git,
+				// and always avoid node_modules because it can contain many nested repos.
+				if (relativeDir === "" && (entry.name === ".git" || entry.name === `.git${GIT_DISABLED_SUFFIX}`)) {
+					continue
+				}
+				if (entry.name === "node_modules") {
+					continue
+				}
+
+				if (checkpointIgnore.ignores(`${relativePath}/`)) {
+					continue
+				}
+
+				if (entry.name === targetName) {
+					gitPaths.push(relativePath)
+					continue
+				}
+
+				queue.push(relativePath)
+			}
+		}
+
+		return gitPaths
 	}
 
 	/**
@@ -237,3 +304,8 @@ export class GitOperations {
 }
 
 export const GIT_DISABLED_SUFFIX = "_disabled"
+export const CHECKPOINT_IGNORE_FILENAME = ".checkpointignore"
+
+function toPosixPath(filePath: string): string {
+	return filePath.split(path.sep).join(path.posix.sep)
+}
