@@ -82,6 +82,8 @@ interface ChatTextAreaProps {
 	shouldDisableFilesAndImages: boolean
 	onHeightChange?: (height: number) => void
 	onFocusChange?: (isFocused: boolean) => void
+	navigatePromptHistory?: (direction: "previous" | "next", currentInputValue: string) => boolean
+	resetPromptHistoryNavigation?: () => void
 }
 
 interface GitCommit {

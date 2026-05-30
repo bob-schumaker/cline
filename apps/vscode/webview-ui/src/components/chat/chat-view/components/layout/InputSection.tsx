@@ -36,6 +36,8 @@ export const InputSection: React.FC<InputSectionProps> = ({
 		setSelectedFiles,
 		textAreaRef,
 		handleFocusChange,
+		navigatePromptHistory,
+		resetPromptHistoryNavigation,
 	} = chatState
 
 	const { isAtBottom, scrollToBottomAuto } = scrollBehavior
@@ -55,6 +57,7 @@ export const InputSection: React.FC<InputSectionProps> = ({
 			<ChatTextArea
 				activeQuote={activeQuote}
 				inputValue={inputValue}
+				navigatePromptHistory={navigatePromptHistory}
 				onFocusChange={handleFocusChange}
 				onHeightChange={() => {
 					if (isAtBottom) {
@@ -65,6 +68,7 @@ export const InputSection: React.FC<InputSectionProps> = ({
 				onSend={() => messageHandlers.handleSendMessage(inputValue, selectedImages, selectedFiles)}
 				placeholderText={placeholderText}
 				ref={textAreaRef}
+				resetPromptHistoryNavigation={resetPromptHistoryNavigation}
 				selectedFiles={selectedFiles}
 				selectedImages={selectedImages}
 				sendingDisabled={sendingDisabled}
