@@ -55,6 +55,8 @@ export interface ChatState {
 	handleFocusChange: (isFocused: boolean) => void
 	clearExpandedRows: () => void
 	resetState: () => void
+	navigatePromptHistory: (direction: "previous" | "next", currentInputValue: string) => boolean
+	resetPromptHistoryNavigation: () => void
 
 	// Scroll-related state (will be moved to scroll hook)
 	showScrollToBottom?: boolean
