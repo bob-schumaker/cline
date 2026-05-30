@@ -215,6 +215,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 			onHeightChange,
 			onFocusChange,
 			navigatePromptHistory,
+			resetPromptHistoryNavigation,
 		},
 		ref,
 	) => {
@@ -743,6 +744,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 			(e: React.ChangeEvent<HTMLTextAreaElement>) => {
 				const newValue = e.target.value
 				const newCursorPosition = e.target.selectionStart
+				resetPromptHistoryNavigation?.()
 				setInputValue(newValue)
 				setCursorPosition(newCursorPosition)
 				let showMenu = shouldShowContextMenu(newValue, newCursorPosition)
@@ -837,7 +839,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 					setFileSearchResults([])
 				}
 			},
-			[setInputValue, setFileSearchResults, selectedType],
+			[setInputValue, setFileSearchResults, selectedType, resetPromptHistoryNavigation],
 		)
 
 		useEffect(() => {

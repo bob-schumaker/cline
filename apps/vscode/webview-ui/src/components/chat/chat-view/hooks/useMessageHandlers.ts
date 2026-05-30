@@ -23,6 +23,7 @@ export function useMessageHandlers(messages: ClineMessage[], chatState: ChatStat
 		setEnableButtons,
 		clineAsk,
 		lastMessage,
+		resetPromptHistoryNavigation,
 	} = chatState
 	const cancelInFlightRef = useRef(false)
 
@@ -118,6 +119,7 @@ export function useMessageHandlers(messages: ClineMessage[], chatState: ChatStat
 
 				// Only clear input and disable UI if message was actually sent
 				if (messageSent) {
+					resetPromptHistoryNavigation()
 					setInputValue("")
 					setActiveQuote(null)
 					setSendingDisabled(true)
@@ -142,6 +144,7 @@ export function useMessageHandlers(messages: ClineMessage[], chatState: ChatStat
 			setSelectedImages,
 			setSelectedFiles,
 			setEnableButtons,
+			resetPromptHistoryNavigation,
 			chatState,
 		],
 	)
@@ -158,7 +161,8 @@ export function useMessageHandlers(messages: ClineMessage[], chatState: ChatStat
 		setActiveQuote(null)
 		setSelectedImages([])
 		setSelectedFiles([])
-	}, [setInputValue, setActiveQuote, setSelectedImages, setSelectedFiles])
+		resetPromptHistoryNavigation()
+	}, [setInputValue, setActiveQuote, setSelectedImages, setSelectedFiles, resetPromptHistoryNavigation])
 
 	// Execute button action based on type
 	const executeButtonAction = useCallback(
