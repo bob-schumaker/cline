@@ -36,6 +36,7 @@ export const InputSection: React.FC<InputSectionProps> = ({
 		setSelectedFiles,
 		textAreaRef,
 		handleFocusChange,
+		isPromptHistoryNavigating,
 		navigatePromptHistory,
 		resetPromptHistoryNavigation,
 	} = chatState
@@ -57,6 +58,7 @@ export const InputSection: React.FC<InputSectionProps> = ({
 			<ChatTextArea
 				activeQuote={activeQuote}
 				inputValue={inputValue}
+				isPromptHistoryNavigating={isPromptHistoryNavigating}
 				navigatePromptHistory={navigatePromptHistory}
 				onFocusChange={handleFocusChange}
 				onHeightChange={() => {

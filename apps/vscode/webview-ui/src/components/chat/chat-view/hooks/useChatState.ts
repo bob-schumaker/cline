@@ -139,6 +139,7 @@ export function useChatState(messages: ClineMessage[]): ChatState {
 		secondLastMessage,
 		clineAsk,
 		task,
+		isPromptHistoryNavigating: promptHistoryIndex !== null,
 
 		// Handlers
 		handleFocusChange,

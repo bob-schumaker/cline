@@ -50,6 +50,7 @@ export interface ChatState {
 	secondLastMessage: ClineMessage | undefined
 	clineAsk: ClineAsk | undefined
 	task: ClineMessage | undefined
+	isPromptHistoryNavigating: boolean
 
 	// Handlers
 	handleFocusChange: (isFocused: boolean) => void

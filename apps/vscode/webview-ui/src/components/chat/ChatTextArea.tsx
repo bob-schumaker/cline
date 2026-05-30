@@ -42,6 +42,7 @@ import {
 	validateSlashCommand,
 } from "@/utils/slash-commands"
 import ClineRulesToggleModal from "../cline-rules/ClineRulesToggleModal"
+import { getPromptHistoryNavigationDirection } from "./chat-view/utils/promptHistoryNavigation"
 import ServersToggleModal from "./ServersToggleModal"
 
 const { MAX_IMAGES_AND_FILES_PER_MESSAGE } = CHAT_CONSTANTS
@@ -80,6 +81,7 @@ interface ChatTextAreaProps {
 	onSend: () => void
 	onSelectFilesAndImages: () => void
 	shouldDisableFilesAndImages: boolean
+	isPromptHistoryNavigating?: boolean
 	onHeightChange?: (height: number) => void
 	onFocusChange?: (isFocused: boolean) => void
 	navigatePromptHistory?: (direction: "previous" | "next", currentInputValue: string) => boolean
@@ -209,8 +211,10 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 			onSend,
 			onSelectFilesAndImages,
 			shouldDisableFilesAndImages,
+			isPromptHistoryNavigating = false,
 			onHeightChange,
 			onFocusChange,
+			navigatePromptHistory,
 		},
 		ref,
 	) => {
@@ -582,6 +586,24 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 
 				// Safari does not support InputEvent.isComposing (always false), so we need to fallback to keyCode === 229 for it
 				const isComposing = isSafari ? event.nativeEvent.keyCode === 229 : (event.nativeEvent?.isComposing ?? false)
+				const promptHistoryDirection = getPromptHistoryNavigationDirection({
+					key: event.key,
+					inputValue,
+					isPromptHistoryNavigating,
+					isComposing,
+					metaKey: event.metaKey,
+					ctrlKey: event.ctrlKey,
+					altKey: event.altKey,
+				})
+				if (promptHistoryDirection) {
+					const handled = navigatePromptHistory?.(promptHistoryDirection, inputValue) ?? false
+					if (handled) {
+						event.preventDefault()
+						event.stopPropagation()
+						return
+					}
+				}
+
 				if (event.key === "Enter" && !event.shiftKey && !isComposing) {
 					event.preventDefault()
 
@@ -673,6 +695,8 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 				slashCommandsQuery,
 				handleSlashCommandsSelect,
 				sendingDisabled,
+				isPromptHistoryNavigating,
+				navigatePromptHistory,
 			],
 		)
 
