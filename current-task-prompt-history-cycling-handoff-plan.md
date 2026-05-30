@@ -24,22 +24,22 @@ This first implementation should be deliberately narrow:
 ## Current Status
 
 - Done: Slice 1 added a current-task text prompt-history derivation helper and
-  focused tests in commit `4bc5715c2`.
+  focused tests in commit `4bc5715c2`. Slice 2 added prompt-history navigation
+  state/actions to `useChatState(messages)` in commit `d067ee76`.
 - In progress: No implementation slice is currently active.
-- Remaining: Slice 2 should add prompt-history state and navigation actions to
-  `useChatState(messages)`.
+- Remaining: Slice 3 should pass prompt-history navigation callbacks through
+  `InputSection`.
 
 ## Slice Progress
 
 - [x] Slice 1 — extract prompt-history helper (`4bc5715c2`)
-- [ ] Slice 2 — add prompt-history navigation state to `useChatState`
+- [x] Slice 2 — add prompt-history navigation state to `useChatState` (`d067ee76`)
 - [ ] Slice 3 — pass navigation callbacks through `InputSection`
 - [ ] Slice 4 — add narrow keydown integration in `ChatTextArea`
 - [ ] Slice 5 — preserve draft on send/reset
 - [ ] Slice 6 — add focused navigation tests where feasible
 - [ ] Slice 7 — run final validation for the implemented prompt-history flow
-- Next active slice: Slice 2 — add prompt-history navigation state to
-  `useChatState`
+- Next active slice: Slice 3 — pass navigation callbacks through `InputSection`
 
 ## Validation Performed
 
@@ -47,6 +47,10 @@ This first implementation should be deliberately narrow:
 - GREEN: `cd apps/vscode/webview-ui && npm run test -- src/components/chat/chat-view/utils/promptHistory.test.ts 2>&1` — pass — 4 prompt-history helper tests passed.
 - Format/check: `cd apps/vscode && npx biome check webview-ui/src/components/chat/chat-view/utils/promptHistory.ts webview-ui/src/components/chat/chat-view/utils/promptHistory.test.ts --no-errors-on-unmatched --files-ignore-unknown=true --diagnostic-level=error 2>&1` — pass — checked 2 files with no fixes applied.
 - Pre-commit: `pre-commit run --files apps/vscode/webview-ui/src/components/chat/chat-view/utils/promptHistory.ts apps/vscode/webview-ui/src/components/chat/chat-view/utils/promptHistory.test.ts 2>&1` — fail/not available — repository checkout has no `.pre-commit-config.yaml` file.
+- Slice 2 RED: `cd apps/vscode/webview-ui && npm run test -- src/components/chat/chat-view/hooks/useChatState.test.ts 2>&1` — fail — expected missing-function failures for `navigatePromptHistory` before the hook exposed navigation actions.
+- Slice 2 GREEN: `cd apps/vscode/webview-ui && npm run test -- src/components/chat/chat-view/hooks/useChatState.test.ts src/components/chat/chat-view/utils/promptHistory.test.ts 2>&1` — pass — 8 hook/helper tests passed.
+- Slice 2 format/check: `cd apps/vscode && npx biome check webview-ui/src/components/chat/chat-view/hooks/useChatState.ts webview-ui/src/components/chat/chat-view/hooks/useChatState.test.ts webview-ui/src/components/chat/chat-view/types/chatTypes.ts --no-errors-on-unmatched --files-ignore-unknown=true --diagnostic-level=error 2>&1` — pass after adding a final newline to `useChatState.test.ts` — checked 3 files with no fixes applied.
+- Slice 2 pre-commit: `pre-commit run --files apps/vscode/webview-ui/src/components/chat/chat-view/hooks/useChatState.ts apps/vscode/webview-ui/src/components/chat/chat-view/hooks/useChatState.test.ts apps/vscode/webview-ui/src/components/chat/chat-view/types/chatTypes.ts 2>&1` — fail/not available — repository checkout has no `.pre-commit-config.yaml` file.
 
 ## Relevant Existing Code
 
